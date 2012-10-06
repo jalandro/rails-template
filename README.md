@@ -3,3 +3,9 @@
 ### 使用
 
     rails new project_name -m ../template.rb
+
+### 类似项目
+
+https://github.com/RailsApps/rails-composer
+
+http://railswizard.org (翻墙)
