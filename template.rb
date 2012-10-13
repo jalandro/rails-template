@@ -2,19 +2,16 @@
 # see http://rdoc.info/github/wycats/thor/master/Thor/Actions.html
 is_shopqi_app = yes?('as ShopQi app?(install shopqi-app and shopqi-app-webhook gem)')
 
-##### Gem #####
+##### Gem 安装 #####
 gem "devise"
-
 # ShopQi
 if is_shopqi_app
   gem 'shopqi-app'
   gem 'shopqi-app-webhook'
 end
-
 # 实体
 gem 'settingslogic' # 用于保存密钥等信息
 #gem 'seedbank'
-
 # 视图
 unless is_shopqi_app
   gem 'haml'
@@ -23,18 +20,15 @@ end
 gem 'jquery-rails'
 gem 'spine-rails'
 gem 'ruby-haml-js'
-
 # 后台任务、定时
 gem 'whenever', require: false
-
 # 其他
 gem 'exception_notification' # 出现异常时要发邮件给管理员
-
 # 部署
 gem 'unicorn'
-
 # 开发
-group :development do
+gem_group :development do
+  gem 'haml-rails'
   gem 'rvm-capistrano', '~> 1.2.5'
   gem 'letter_opener' # 发送的邮件直接在浏览器中打开
   gem 'guard-livereload'
@@ -44,26 +38,38 @@ group :development do
   gem 'guard-unicorn'
   #gem 'guard-delayed'
 end
-
 # 测试
-group :test do
+gem_group :test do
   gem "rspec-rails"
   gem "factory_girl_rails"
   gem 'capybara'
   gem 'database_cleaner'
 end
-
-
 gsub_file 'Gemfile', /#\s*(gem 'therubyracer')/, '\1'
-
 run 'bundle install'
+
+
+##### 基本配置 #####
+insert_into_file 'config/database.yml', "  host: localhost\n", after: "encoding:\sunicode\n", force: true
+run "cp config/database.yml config/database.yml.example" # 项目内拷贝
+gsub_file 'config/database.yml', /username:.+/, "username: #{ENV['DB_USERNAME'] || :postgres}"
+gsub_file 'config/database.yml', /password:.+/, "password: #{ENV['DB_PASSWORD']}"
+insert_into_file 'config/database.yml', "  port: #{ENV['DB_PORT'] || 5432}\n", after: "database: #{app_name}_production\n"
+gsub_file 'config/initializers/backtrace_silencers.rb', /#\s*(# Rails.backtrace_cleaner.remove_silencers!)/, '\1'
+insert_into_file 'config/application.rb', after: 'config.autoload_paths += %W(#{config.root}/extras)' do <<-'RUBY'
+
+    config.autoload_paths += %W(#{config.root}/lib)
+RUBY
+end
+rake "db:drop db:create"
+generate 'devise:install', "--force"
+
+
+##### 测试环境 #####
+generate 'rspec:install', "--force"
 run 'guard init'
 run 'spork --bootstrap'
-
-generate 'rspec:install'
-generate 'devise:install'
-
-inject_into_file 'config/application.rb', :after => "Rails::Application\n" do <<-RUBY
+insert_into_file 'config/application.rb', after: "Rails::Application\n" do <<-RUBY
 
       # don't generate RSpec tests for views and helpers
       config.generators do |g|
@@ -80,33 +86,15 @@ RUBY
 
 end
 
-inject_into_file 'config/application.rb', :after => 'config.autoload_paths += %W(#{config.root}/extras)' do <<-'RUBY'
 
-    config.autoload_paths += %W(#{config.root}/lib)
-RUBY
-end
-
-run "cp config/database.yml config/database.yml.example"
+##### 前端配置 #####
 remove_file 'README.rdoc'
-
-append_to_file '.gitignore', <<-END
-  .DS_Store
-
-  config/unicorn.conf.rb
-  config/database.yml
-  config/app_secret_config.yml
-END
-git :init
-git add: ".", commit: "-m 'initial commit'"
-
+create_file 'README.md'
 remove_file 'public/index.html'
-generate(:controller, "home index")
-
-gsub_file 'config/initializers/backtrace_silencers.rb', /#\s*(# Rails.backtrace_cleaner.remove_silencers!)/, '\1'
-
+remove_file 'public/favicon.ico'
+#get         'https://github.com/saberma/rails-template/blob/master/favicon.ico?raw=true', 'public/favicon.ico'
 remove_file 'app/assets/stylesheets/application.css'
-create_file 'app/assets/stylesheets/application.css.scss'
-
+create_file 'app/assets/stylesheets/application.css.scss.erb'
 remove_file 'app/assets/javascripts/application.js'
 create_file 'app/assets/javascripts/application.js.coffee', <<-END
 #= require jquery
@@ -116,3 +104,35 @@ create_file 'app/assets/javascripts/application.js.coffee', <<-END
 $(document).ready ->
 
 END
+
+
+##### 生成默认控制器 #####
+generate :controller, "home index", "--force"
+gsub_file 'config/routes.rb', "get \"home/index\"\n", ''
+route "root :to => 'home#index'"
+
+
+##### 生成 ShopQi 应用 #####
+if is_shopqi_app
+  #client_id = ask('Your ShopQi app client_id?')
+  #secret = ask('Your ShopQi app secret?')
+  client_id = 'f04bfb5c3f6a0380e2a8f5c64a1aed6bdb1ac7554e0a77a3f1992e087bce3479'
+  secret = '7d561bb675cf3eba72830a99f0c70321d822643219b89a43b7b329ca9426a503'
+  generate :shopqi_app, "#{client_id} #{secret} --force"
+  generate :shopqi_app_webhook, "--force"
+  run 'bundle install'
+  rake "db:migrate"
+  rake "db:migrate", env: :test
+end
+
+
+##### Git #####
+append_to_file '.gitignore', <<-END
+  .DS_Store
+
+  config/unicorn.conf.rb
+  config/database.yml
+  config/app_secret_config.yml
+END
+git :init
+git add: ".", commit: "-m 'initial commit'"
