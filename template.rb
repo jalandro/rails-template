@@ -1,6 +1,13 @@
+# encoding: utf-8
 #rails new shopkit_app -d sqlite3 -T
 # see http://rdoc.info/github/wycats/thor/master/Thor/Actions.html
+# 统一获取交互参数
 is_shopqi_app = yes?('as ShopQi app?(install shopqi-app and shopqi-app-webhook gem)')
+if is_shopqi_app
+  client_id = ask('Your ShopQi app client_id?') || 'f04bfb5c3f6a0380e2a8f5c64a1aed6bdb1ac7554e0a77a3f1992e087bce3479'
+  secret = ask('Your ShopQi app secret?') || '7d561bb675cf3eba72830a99f0c70321d822643219b89a43b7b329ca9426a503'
+  app_name = ask('Your ShopQi app name?') || '快递跟踪'
+end
 
 ##### Gem 安装 #####
 gem "devise"
@@ -114,25 +121,25 @@ route "root :to => 'home#index'"
 
 ##### 生成 ShopQi 应用 #####
 if is_shopqi_app
-  #client_id = ask('Your ShopQi app client_id?')
-  #secret = ask('Your ShopQi app secret?')
-  client_id = 'f04bfb5c3f6a0380e2a8f5c64a1aed6bdb1ac7554e0a77a3f1992e087bce3479'
-  secret = '7d561bb675cf3eba72830a99f0c70321d822643219b89a43b7b329ca9426a503'
   generate :shopqi_app, "#{client_id} #{secret} --force"
   generate :shopqi_app_webhook, "--force"
   run 'bundle install'
   rake "db:migrate"
   rake "db:migrate", env: :test
+  gsub_file 'config/app_secret_config.yml', 'app_name: ShopQi App Example', "app_name: #{app_name}"
+  run "cp config/app_secret_config.yml config/app_secret_config.yml.example"
+  gsub_file 'config/app_secret_config.yml.example', client_id, 'f04bfb5c3f6a0380e2a8f5c64a1aed6bdb1ac7554e0a77a3f1992e087bce3479'
+  gsub_file 'config/app_secret_config.yml.example', secret, '7d561bb675cf3eba72830a99f0c70321d822643219b89a43b7b329ca9426a503'
 end
 
 
 ##### Git #####
 append_to_file '.gitignore', <<-END
-  .DS_Store
+.DS_Store
 
-  config/unicorn.conf.rb
-  config/database.yml
-  config/app_secret_config.yml
+config/unicorn.conf.rb
+config/database.yml
+config/app_secret_config.yml
 END
 git :init
 git add: ".", commit: "-m 'initial commit'"
