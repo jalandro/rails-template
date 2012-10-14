@@ -52,6 +52,9 @@ gem_group :test do
   gem 'capybara'
   gem 'database_cleaner'
 end
+gem_group :development, :test do
+  gem "awesome_print"
+end
 gsub_file 'Gemfile', /#\s*(gem 'therubyracer')/, '\1'
 run 'bundle install'
 
@@ -131,6 +134,22 @@ if is_shopqi_app
   gsub_file 'config/app_secret_config.yml.example', client_id, 'f04bfb5c3f6a0380e2a8f5c64a1aed6bdb1ac7554e0a77a3f1992e087bce3479'
   gsub_file 'config/app_secret_config.yml.example', secret, '7d561bb675cf3eba72830a99f0c70321d822643219b89a43b7b329ca9426a503'
 end
+
+
+##### 定时任务 #####
+run 'wheneverize .'
+
+
+##### travis-ci #####
+create_file '.travis.yml', <<-END
+language: ruby
+
+rvm: 1.9.3
+
+script:
+  - bundle exec rake db:drop db:create db:schema:load --trace 2>&1
+  - bundle exec rspec spec
+END
 
 
 ##### Git #####
