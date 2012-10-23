@@ -78,6 +78,18 @@ rake "db:drop db:create"
 generate 'devise:install', "--force"
 
 
+##### 扩展工具 #####
+create_file 'config/initializers/datetime_format.rb', <<-END
+Time::DATE_FORMATS.merge!(
+  :serial => "%Y%m%d",
+  :full => "%Y-%m-%d %H:%M:%S",
+  :short => "%m-%d %H:%M",
+)
+
+#Date::DATE_FORMATS.merge!()
+END
+
+
 ##### 测试环境 #####
 generate 'rspec:install', "--force"
 run 'guard init'
