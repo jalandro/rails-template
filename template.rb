@@ -65,6 +65,9 @@ run "cp config/database.yml config/database.yml.example" # 项目内拷贝
 gsub_file 'config/database.yml', /username:.+/, "username: #{ENV['DB_USERNAME'] || :postgres}"
 gsub_file 'config/database.yml', /password:.+/, "password: #{ENV['DB_PASSWORD']}"
 insert_into_file 'config/database.yml', "  port: #{ENV['DB_PORT'] || 5432}\n", after: "database: #{app_name}_production\n"
+
+insert_into_file 'config/environments/development.rb', "  config.action_mailer.delivery_method = :letter_opener\n", after: "config.action_mailer.raise_delivery_errors = false\n"
+insert_into_file 'config/environments/production.rb', "  config.action_mailer.delivery_method = :sendmail\n", after: "config.action_mailer.raise_delivery_errors = false\n"
 gsub_file 'config/initializers/backtrace_silencers.rb', /#\s*(# Rails.backtrace_cleaner.remove_silencers!)/, '\1'
 insert_into_file 'config/application.rb', after: 'config.autoload_paths += %W(#{config.root}/extras)' do <<-'RUBY'
 
@@ -102,7 +105,7 @@ remove_file 'README.rdoc'
 create_file 'README.md'
 remove_file 'public/index.html'
 remove_file 'public/favicon.ico'
-#get         'https://github.com/saberma/rails-template/blob/master/favicon.ico?raw=true', 'public/favicon.ico'
+get         'https://github.com/saberma/rails-template/blob/master/favicon.ico?raw=true', 'public/favicon.ico'
 remove_file 'app/assets/stylesheets/application.css'
 create_file 'app/assets/stylesheets/application.css.scss.erb'
 remove_file 'app/assets/javascripts/application.js'
