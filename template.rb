@@ -43,8 +43,6 @@ gem_group :development do
   gem 'rvm-capistrano', '~> 1.2.5'
   gem 'letter_opener' # 发送的邮件直接在浏览器中打开
   gem 'guard-livereload'
-  gem 'guard-spork'
-  gem 'guard-rspec'
   gem 'guard-bundler'
   gem 'guard-unicorn'
   #gem 'guard-delayed'
@@ -55,6 +53,8 @@ gem_group :test do
   gem "factory_girl_rails"
   gem 'capybara'
   gem 'database_cleaner'
+  gem 'guard-spork'
+  gem 'guard-rspec'
 end
 gem_group :development, :test do
   gem "awesome_print"
@@ -65,6 +65,7 @@ run 'bundle install'
 
 ##### 基本配置 #####
 insert_into_file 'config/database.yml', "  host: localhost\n", after: "encoding:\sunicode\n", force: true
+gsub_file 'config/database.yml', /username:.+/, "username: postgres"
 run "cp config/database.yml config/database.yml.example" # 项目内拷贝
 gsub_file 'config/database.yml', /username:.+/, "username: #{ENV['DB_USERNAME'] || :postgres}"
 gsub_file 'config/database.yml', /password:.+/, "password: #{ENV['DB_PASSWORD']}"
@@ -161,6 +162,8 @@ run 'wheneverize .'
 
 ##### travis-ci #####
 create_file '.travis.yml', <<-END
+bundler_args: --without production development
+
 language: ruby
 
 rvm: 1.9.3
