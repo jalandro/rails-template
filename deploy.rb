@@ -48,7 +48,24 @@ namespace :deploy do
     run "kill -s USR2 `cat #{pids_path}/unicorn.#{application}.pid`"
   end
 
+  # scp -P $CAP_PORT config/{database,app_secret_config}.yml shopqiapp@$CAP_APP_HOST:/u/apps/shopqiapp/rails_app_name/shared/config/
+  desc "Symlink shared resources on each release" # 配置文件
+  task :symlink_shared, roles: :app do
+    %w(database.yml app_secret_config.yml).each do |secure_file|
+      run "ln -nfs #{shared_path}/config/#{secure_file} #{release_path}/config/#{secure_file}"
+    end
+  end
+
+  desc "create config shared path"
+  task :add_shared_dir, roles: :app do
+    run "mkdir -p #{shared_path}/config"
+  end
+
 end
+
+before 'deploy:migrate'          , 'deploy:symlink_shared'
+before 'deploy:assets:precompile', 'deploy:symlink_shared'
+after 'deploy:setup'             , 'deploy:add_shared_dir'
 
 after "deploy:stop",    "delayed_job:stop"
 after "deploy:start",   "delayed_job:start"
