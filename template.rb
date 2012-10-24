@@ -185,6 +185,7 @@ get 'https://github.com/saberma/rails-template/blob/master/unicorn.rb?raw=true',
 get 'https://github.com/saberma/rails-template/blob/master/deploy.rb?raw=true', 'config/deploy.rb'
 gsub_file 'config/unicorn.rb', /rails_app_name/, simple_app_name
 gsub_file 'config/deploy.rb', /rails_app_name/, simple_app_name
+gsub_file 'Capfile', /\s# load 'deploy\/assets'/, "load 'deploy/assets'" # 支持 assets compile
 
 
 ##### Git #####

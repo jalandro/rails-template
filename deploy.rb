@@ -8,6 +8,12 @@
 require "rvm/capistrano"                                 # Load RVM's capistrano plugin.
 require "bundler/capistrano" # 集成bundler和rvm
 require "delayed/recipes"
+
+begin 'whenever' # 定时
+  set :whenever_command, "bundle exec whenever"
+  require "whenever/capistrano"
+end
+
 set :rails_env, "production"                             #added for delayed job
 set :rvm_ruby_string, ENV['CAP_RVM_RUBY']                # Or whatever env you want it to run in.
 set :rvm_type, :user                                     # Copy the exact line. I really mean :user here
